@@ -1,4 +1,4 @@
-import Prelude hiding (product, head, tail, init, last, append, reverse, take, drop, zip)
+import Prelude hiding (product, head, tail, init, last, append, reverse, take, drop, zip, replicate, repeat)
 
 --Task 1
 product :: [Int] -> Int 
@@ -105,55 +105,107 @@ mergeSorted (x : xs) (y : ys)
 
 --Task 8
 pack :: Eq a => [a] -> [[a]]
-pack [] = []
-pack (x : xs) = (x : ys) : pack zs 
+pack lst = go [] lst 
     where 
-        ys = takeSome x xs
-        zs = dropSome x xs
-
-takeSome :: Eq a => a -> [a] -> [a]
-takeSome _ [] = []
-takeSome x (y : ys)
-    |x == y = y : takeSome x ys 
-    |otherwise = []
-
-dropSome :: Eq a => a -> [a] -> [a]
-dropSome _ [] = []
-dropSome x (y : ys) 
-    |x == y = dropSome x ys 
-    |otherwise = y : ys
+        go :: Eq a => [a] -> [a] -> [[a]]
+        go acc [] = [acc] 
+        go acc [x] = [x : acc]
+        go acc (x : xs@(y : _ys))
+            |x == y = go (x : acc) xs
+            |otherwise = (x : acc) : go [] xs
 
 --Task 9
-rle :: Eq a => [a] -> [(a, Int)]
-rle [] = []
-rle (x : xs) 
-    |contains x xs = rle xs
-    |otherwise = (x, count x (x : xs)) : rle xs
-    where
-        contains :: Eq a => a -> [a] -> Bool 
-        contains _ [] = False
-        contains x (y : ys)
-            |x == y = True
-            |otherwise = contains x ys
-
-        count :: Eq a => a -> [a] -> Int 
-        count _ [] = 0
-        count x (y : ys)
-            |x == y = 1 + count x ys
-            |otherwise = count x ys
-
---Task 10
-decode :: [(Int, a)] -> [a]
-decode [] = []
-decode ((n, x) : xs) 
-    |n <= 0 = decode xs
-    |otherwise = x : decode ((n - 1, x) : xs)
-
---Task 11
-decart :: [a] -> [b] -> [(a, b)]
-decart [] _ = []
-decart (x : xs) ys = pairWith x ys ++ decart xs ys
+rle :: Eq a => [a] -> [(Int, a)]
+rle lst = go (pack lst)
     where 
-        pairWith :: a -> [b] -> [(a, b)]
-        pairWith _ [] = []
-        pairWith x (y : ys) = (x, y) : pairWith x ys
+        go :: Eq a => [[a]] -> [(Int, a)]
+        go [] = []
+        go (x : xs) = (length x, head x) : go xs
+
+
+--Task 10 
+decodeRle :: [(Int, a)] -> [a]
+decodeRle [] = []
+decodeRle ((n, x) : xs) = replicate n x ++ decodeRle xs
+
+replicate :: Int -> a -> [a]
+replicate n x
+  | n <= 0 = []
+  | otherwise = x : replicate (n - 1) x
+
+--Task 11 
+cartesian :: [a] -> [b] -> [(a, b)]
+cartesian [] _ = [] 
+cartesian (x : xs) ys = pairWithEvery x ys ++ cartesian xs ys 
+    where 
+        pairWithEvery :: a -> [b] -> [(a, b)]
+        pairWithEvery _ [] = []
+        pairWithEvery x (y : ys) = (x, y) : pairWithEvery x ys
+
+--Task 12
+subsets :: [a] -> [[a]]
+subsets [] = [[]]
+subsets (x : xs) = let rest = subsets xs in addToEach x rest ++ rest
+    where
+        addToEach :: a -> [[a]] -> [[a]]
+        addToEach _ [] = []
+        addToEach x (xs : xss) = (x : xs) : addToEach x xss
+
+--Task 13
+combinations :: Int -> [a] -> [[a]]
+combinations k lst = filterByLength k (subsets lst)
+ where
+  filterByLength :: Int -> [[a]] -> [[a]]
+  filterByLength _ [] = []
+  filterByLength k (xs : xss)
+    | length xs == k = xs : filterByLength k xss
+    | otherwise = filterByLength k xss
+
+--Task 14
+isPrefixOf :: Eq a => [a] -> [a] -> Bool
+isPrefixOf [] _ = True
+isPrefixOf _ [] = False
+isPrefixOf (x : xs) (y : ys) = x == y && xs `isPrefixOf` ys
+
+--Task 15
+permutations :: Eq a => [a] -> [[a]]
+permutations [] = [[]]
+permutations lst = concat [map (x :) res | x <- lst, let res = permutations $ filter (/= x) lst]
+
+--Task 16
+repeat :: a -> [a]
+repeat x = x : repeat x
+
+--Task 17
+nats :: [Int]
+nats = go 0
+    where 
+        go i = i : go (i + 1)
+
+--Task 18
+powerOf2 :: [Int] 
+powerOf2 = go 0
+    where go i = (2 ^ i) : go (i + 1)
+
+--Task 19
+primeNumbers :: [Int]
+primeNumbers = go 2
+    where 
+        go :: Int -> [Int]
+        go i 
+            |isPrime i = i : go (i + 1)
+            |otherwise = go (i + 1)
+
+isPrime :: Int -> Bool
+isPrime n = hasNoDivisersIn n [2..n-1]
+    where 
+        hasNoDivisersIn :: Int -> [Int] -> Bool
+        hasNoDivisersIn _ [] = True
+        hasNoDivisersIn k (x : xs) = mod k x /= 0 && hasNoDivisersIn k xs 
+
+--Task 20
+fibonacciNums :: [Int]
+fibonacciNums = go 0 1
+    where 
+        go :: Int -> Int -> [Int]
+        go prev cur = prev : go cur (prev + cur)
